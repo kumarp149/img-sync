@@ -1,0 +1,8 @@
+**/secrets/*
+**/node_modules/*
+**/bin/
+**/build/
+**/.classpath
+**/.vscode
+**/lib/*
+*.jar
