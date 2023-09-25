@@ -1,0 +1,66 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install patches
+        run: |
+          sudo apt update
+          sudo apt upgrade
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - name: Set up java 19
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+      
+      - name: AWS CLI Set up
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
+          aws configure set default.region ap-south-1
+
+
+
+      - name: Install node dependancies
+        run: |
+          cd js
+          npm install
+
+      - name: Download java libraries
+        run: aws s3 sync s3://sruteesh-jar-files/img-sync/ java/lib/
+      
+      - name: Build
+        run: make
+
+      - name: Deploy
+        run: make deploy
+      
+      - name: Save JS Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: js-artifact
+          path: js/bin/deployment-package.zip
+      
+      - name: Save Java Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: java-artifact
+          path: java/bin/deploy.jar
+
+

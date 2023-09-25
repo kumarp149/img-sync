@@ -49,28 +49,27 @@ public class App implements RequestStreamHandler {
     @Override
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context)
             throws MalformedURLException, IOException {
+        Constants.FOLDER_TO_SYNC = System.getenv("FOLDER_TO_SYNC");
+        Constants.S3_UPLOAD_PREFIX = System.getenv("S3_UPLOAD_PREFIX");
+        Constants.OAUTH_TOKEN_URL = System.getenv("OAUTH_TOKEN_URL");
+        
         final String MODULE = "App.handleRequest";
         Logger logger = new LoggerImpl();
+        logger.log(LogType.INFO, "STARTED SYNCING THE FOLDER " + System.getenv("FOLDER_TO_SYNC") + " FROM GDRIVE TO S3", MODULE);
         String authToken = generateOAuthToken(logger);
         if (authToken == null) {
-            logger.log(LogType.DEBUG,"ERROR GENERATING TOKEN",MODULE);
+            logger.log(LogType.ERROR,"ERROR GENERATING TOKEN",MODULE);
+            logger.finish();
             return;
         } else {
             GoogleDriveAPIClient driveClient = new GoogleDriveAPIClientImpl();
             try {
                 driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger);
             } catch (InterruptedException | ExecutionException e) {
-                logger.log(LogType.ERROR, e.getMessage(), MODULE);
+                logger.logTrace(e, MODULE);
+            } finally{
+                logger.finish();
             }
         }
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                logger.finish();
-            } catch (IOException e) {
-                System.out.println("ERROR WRITING LOG TO S3");
-                System.out.println(e.getMessage());
-            }
-        }));
     }
-
 }

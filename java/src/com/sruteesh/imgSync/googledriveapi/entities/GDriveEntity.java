@@ -9,6 +9,7 @@ public class GDriveEntity {
     private String sha256Checksum;
     private List<String> parents;
     private String webContentLink;
+    private long size;
     public String getMimeType() {
         return mimeType;
     }
@@ -45,6 +46,11 @@ public class GDriveEntity {
     public void setWebContentLink(String webContentLink) {
         this.webContentLink = webContentLink;
     }
+    public long getSize() {
+        return size;
+    }
+    public void setSize(long size) {
+        this.size = size;
+    }
 
-    
 }

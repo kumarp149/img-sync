@@ -5,4 +5,5 @@ import java.io.IOException;
 public interface Logger {
     public void log(LogType logType, String message, String moduleName);
     public void finish() throws IOException;
+    public void logTrace(Exception e, String MODULE);
 }

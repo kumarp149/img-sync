@@ -3,12 +3,15 @@ package com.sruteesh.imgSync.logger;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.sruteesh.imgSync.constants.Constants;
 
@@ -58,17 +61,30 @@ public class LoggerImpl implements Logger {
                 type = "DEBUG";
         }
         logContent += " - [" + type + "] - (" + moduleName + "): " + message + System.lineSeparator();
+        System.out.println(System.currentTimeMillis() + " - " + this.loggerID + " - [" + type + "] - (" + moduleName + "): " + message + System.lineSeparator());
     }
 
     @Override
     public void finish() throws IOException{
+        System.out.println("FINISHING LOGS");
         streamLogToS3();
+    }
+
+    @Override
+    public void logTrace(Exception e, String MODULE){
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter stackWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(stackWriter);
+        stackWriter.close();
+        log(LogType.ERROR, stringWriter.toString(), MODULE);
     }
     
     private void streamLogToS3() throws IOException{
         byte[] logBytes = this.logContent.getBytes();
         InputStream logStream = new ByteArrayInputStream(logBytes);
-        s3.putObject(new PutObjectRequest(Constants.S3_LOGGER_BUCKET, LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "_" + loggerID, logStream, null));
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(this.logContent.length());
+        s3.putObject(new PutObjectRequest(Constants.S3_LOGGER_BUCKET, Constants.S3_UPLOAD_PREFIX + "/" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "_" + loggerID, logStream, metadata));
         logStream.close();
     }
 }
