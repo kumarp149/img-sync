@@ -2,8 +2,6 @@ package com.sruteesh.imgSync.s3api.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,7 +28,13 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     
     public void uploadToS3(GDriveEntity entity, String token, String filePath, Logger logger) throws IOException{
         final String MODULE = "S3WriteFromLink.uploadToS3";
-        Constants.FILE_INDEX += 1;
+        if (Constants.FILE_INDEX % 2 == 0){
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                logger.logTrace(e, MODULE);
+            }
+        }
         logger.log(LogType.DEBUG, "UPLOADING FILE: [" + Constants.FILE_INDEX + "]", MODULE);
         String objectHash = getObjectHash(filePath, entity.getName(), logger);
         logger.log(LogType.DEBUG, "S3 OBJECT HASH: [" + objectHash + "] AND HASH IN GDRIVE: [" + entity.getSha256Checksum() + "]", MODULE);
@@ -45,9 +49,12 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
                 InputStream fileStream = connection.getInputStream();
                 streamToS3(fileStream, entity, filePath, logger);
                 fileStream.close();
+                Constants.FILE_INDEX += 1;
             }
+            connection.disconnect();
         } else{
             logger.log(LogType.DEBUG, "S3 OBJECT HASH MATCHED WITH THAT OF DRIVE HASH", MODULE);
+            Constants.FILE_INDEX += 1;
         }
     }
     
@@ -69,7 +76,6 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     private String getObjectHash(String objectPrefix, String objectName, Logger logger){
         final String MODULE = "S3WriteFromLink.getObjectHash";
         try {
-            //s3.getObject(Constants.S3_BUCKET_NAME, objectPrefix + "/" + objectName);
             GetObjectTaggingRequest objectTaggingRequest = new GetObjectTaggingRequest(Constants.S3_BUCKET_NAME, objectPrefix + "/" + objectName);
             GetObjectTaggingResult taggingResult = s3.getObjectTagging(objectTaggingRequest);
             List<Tag> objectTags = taggingResult.getTagSet();
