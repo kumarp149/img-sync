@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPInputStream;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sruteesh.imgSync.constants.Constants;
@@ -24,7 +25,7 @@ import com.sruteesh.imgSync.s3api.utils.S3WriteFromLinkImpl;
 
 
 public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
-    private S3WriteFromLink s3Client = new S3WriteFromLinkImpl();    
+    private S3WriteFromLink s3Writer = new S3WriteFromLinkImpl();    
     /*
      * Initiates the sync from a google drive folder to an AWS S3 bucket
      * folderId is the id of the folder in google drive
@@ -33,7 +34,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
      */
 
     @Override
-    public void initiateSync(String folderId,String authToken, String parentPath, Logger logger) throws IOException, InterruptedException, ExecutionException{
+    public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client) throws IOException, InterruptedException, ExecutionException{
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
         logger.log(LogType.DEBUG, "CALLING GDRIVE API CALL FOR FOLDER: [" + folderId + "]", MODULE);
         URL contentFetchEndpoint = new URL(Constants.DRIVE_API_URL + "?" + "q='" + folderId + "'+in+parents&fields=files(id,name,parents,sha256Checksum,mimeType,webContentLink,size)");
@@ -80,7 +81,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                     logger.log(LogType.DEBUG, entity.getId() + " IS A FOLDER", MODULE);
                     CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                         try {
-                            initiateSync(entity.getId(), authToken, parentPath + "/" + entity.getName(), logger);
+                            initiateSync(entity.getId(), authToken, parentPath + "/" + entity.getName(), logger,s3Client);
                         } catch (IOException | InterruptedException | ExecutionException e) {
                             logger.log(LogType.ERROR, "ERROR WHILE SYNCING THE FOLDER: [" + entity.getId() + "]", MODULE);
                             logger.logTrace(e, MODULE);
@@ -91,7 +92,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                 } else{
                     CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                         try {
-                            s3Client.uploadToS3(entity, authToken, parentPath, logger);    
+                            s3Writer.uploadToS3(entity, authToken, parentPath, logger,s3Client);    
                         } catch (Exception e) {
                             logger.log(LogType.ERROR, "ERROR UPLOADING FILE :[" + entity.getId() + "] TO S3", MODULE);
                             logger.logTrace(e, MODULE);

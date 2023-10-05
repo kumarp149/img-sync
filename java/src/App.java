@@ -8,8 +8,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.sruteesh.imgSync.constants.Constants;
 import com.sruteesh.imgSync.googledriveapi.util.GoogleDriveAPIClient;
 import com.sruteesh.imgSync.googledriveapi.util.GoogleDriveAPIClientImpl;
@@ -52,7 +55,12 @@ public class App implements RequestStreamHandler {
         Constants.FOLDER_TO_SYNC = System.getenv("FOLDER_TO_SYNC");
         Constants.S3_UPLOAD_PREFIX = System.getenv("S3_UPLOAD_PREFIX");
         Constants.OAUTH_TOKEN_URL = System.getenv("OAUTH_TOKEN_URL");
-        
+
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setMaxConnections(5000);
+
+        AmazonS3 s3Client = AmazonS3Client.builder().withClientConfiguration(clientConfiguration).build();
+
         final String MODULE = "App.handleRequest";
         Logger logger = new LoggerImpl();
         logger.log(LogType.INFO, "STARTED SYNCING THE FOLDER " + System.getenv("FOLDER_TO_SYNC") + " FROM GDRIVE TO S3", MODULE);
@@ -64,7 +72,7 @@ public class App implements RequestStreamHandler {
         } else {
             GoogleDriveAPIClient driveClient = new GoogleDriveAPIClientImpl();
             try {
-                driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger);
+                driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger,s3Client);
             } catch (InterruptedException | ExecutionException e) {
                 logger.logTrace(e, MODULE);
             } finally{
