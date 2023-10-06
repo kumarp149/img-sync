@@ -51,10 +51,16 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     
     private void streamToS3(InputStream stream,GDriveEntity entity, String filePath, Logger logger, AmazonS3 s3Client) throws IOException{
         final String MODULE = "S3WriteFromLinkImpl.streamToS3";
+
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(entity.getSize());
-        s3Client.putObject(new PutObjectRequest(Constants.S3_BUCKET_NAME, filePath + "/" + entity.getName(), stream, metadata));
+
+        PutObjectRequest putObjectRequest = new PutObjectRequest(Constants.S3_BUCKET_NAME, filePath + "/" + entity.getName(), stream, metadata);
+        putObjectRequest.getRequestClientOptions().setReadLimit(2 * 1024 * 1024);
+        s3Client.putObject(putObjectRequest);
+
         logger.log(LogType.DEBUG, "OBJECT " + filePath + "/" + entity.getName() + " SUCCESSFULLY UPLOADED TO S3", MODULE);
+
         Tag objectHashTag = new Tag("hash", entity.getSha256Checksum());
         List<Tag> objectTags = new ArrayList<>();
         objectTags.add(objectHashTag);
