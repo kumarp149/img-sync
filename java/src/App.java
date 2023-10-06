@@ -9,6 +9,8 @@ import java.net.URL;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.retry.PredefinedRetryPolicies;
+import com.amazonaws.retry.RetryPolicy;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.s3.AmazonS3;
@@ -58,6 +60,8 @@ public class App implements RequestStreamHandler {
 
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.setMaxConnections(5000);
+        clientConfiguration.setRetryPolicy(new RetryPolicy(PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION,
+        PredefinedRetryPolicies.DEFAULT_BACKOFF_STRATEGY, 5, true));
 
         AmazonS3 s3Client = AmazonS3Client.builder().withClientConfiguration(clientConfiguration).build();
 

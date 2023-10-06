@@ -10,11 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install patches
-        run: |
-          sudo apt update
-          sudo apt upgrade
-
       - name: Checkout code
         uses: actions/checkout@v3
 
