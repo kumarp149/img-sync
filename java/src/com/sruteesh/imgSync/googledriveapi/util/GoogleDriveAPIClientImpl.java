@@ -37,7 +37,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
     public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client) throws IOException, InterruptedException, ExecutionException{
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
         logger.log(LogType.DEBUG, "CALLING GDRIVE API CALL FOR FOLDER: [" + folderId + "]", MODULE);
-        URL contentFetchEndpoint = new URL(Constants.DRIVE_API_URL + "?" + "q='" + folderId + "'+in+parents&fields=files(id,name,parents,sha256Checksum,mimeType,webContentLink,size)");
+        URL contentFetchEndpoint = new URL(Constants.DRIVE_API_URL + "?" + "q='" + folderId + "'+in+parents&fields=files(id,name,parents,sha256Checksum,mimeType,webContentLink,size)&pageSize=1000");
         logger.log(LogType.DEBUG, "GDRIVE API ENDPOINT URL TO FETCH FILE LIST: [" + contentFetchEndpoint.toString() + "]", MODULE);
 
         HttpURLConnection connection = (HttpURLConnection) contentFetchEndpoint.openConnection();
@@ -75,6 +75,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                 GDriveEntity myFile = objectMapper.convertValue(fileNode, GDriveEntity.class);
                 contentInFolders.add(myFile);
             }
+            logger.log(LogType.DEBUG, "API RESPONSE OF FOLDER " + folderId + " HAS " + contentInFolders.size() + " ELEMENTS", MODULE);
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (GDriveEntity entity : contentInFolders){
                 if (entity.getMimeType().equals("application/vnd.google-apps.folder")){
