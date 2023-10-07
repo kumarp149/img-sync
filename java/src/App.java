@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -57,6 +58,8 @@ public class App implements RequestStreamHandler {
         Constants.FOLDER_TO_SYNC = System.getenv("FOLDER_TO_SYNC");
         Constants.S3_UPLOAD_PREFIX = System.getenv("S3_UPLOAD_PREFIX");
         Constants.OAUTH_TOKEN_URL = System.getenv("OAUTH_TOKEN_URL");
+
+        Constants.FUTURES = new ArrayList<>();
 
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.setMaxConnections(5000);

@@ -36,6 +36,11 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
     @Override
     public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client) throws IOException, InterruptedException, ExecutionException{
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
+        if (Constants.FUTURES.size() >= Integer.valueOf(System.getenv("MAX_THREADS"))){
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+            allFutures.get();
+            Constants.FUTURES.clear();
+        }
         logger.log(LogType.DEBUG, "CALLING GDRIVE API CALL FOR FOLDER: [" + folderId + "]", MODULE);
         URL contentFetchEndpoint = new URL(Constants.DRIVE_API_URL + "?" + "q='" + folderId + "'+in+parents&fields=files(id,name,parents,sha256Checksum,mimeType,webContentLink,size)&pageSize=1000");
         logger.log(LogType.DEBUG, "GDRIVE API ENDPOINT URL TO FETCH FILE LIST: [" + contentFetchEndpoint.toString() + "]", MODULE);
@@ -76,7 +81,6 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                 contentInFolders.add(myFile);
             }
             logger.log(LogType.DEBUG, "API RESPONSE OF FOLDER " + folderId + " HAS " + contentInFolders.size() + " ELEMENTS", MODULE);
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (GDriveEntity entity : contentInFolders){
                 if (entity.getMimeType().equals("application/vnd.google-apps.folder")){
                     logger.log(LogType.DEBUG, entity.getId() + " IS A FOLDER", MODULE);
@@ -89,7 +93,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                         }
                         return null;
                     });
-                    futures.add(future);
+                    Constants.FUTURES.add(future);
                 } else{
                     CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                         try {
@@ -100,11 +104,11 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                         }
                         return null;
                     });
-                    futures.add(future);
+                    Constants.FUTURES.add(future);
                 }
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            allFutures.get();
         }
+        CompletableFuture<Void> allFuturesFinal = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+        allFuturesFinal.get();
     }
 }

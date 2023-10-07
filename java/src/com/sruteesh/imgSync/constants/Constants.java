@@ -1,5 +1,8 @@
 package com.sruteesh.imgSync.constants;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 public class Constants {
     public static final String DRIVE_API_URL = "https://www.googleapis.com/drive/v3/files";
     public static final String API_CLIENT_NAME = "IMG-SYNC";
@@ -10,4 +13,5 @@ public class Constants {
     public static String FOLDER_TO_SYNC;
     public static String OAUTH_TOKEN_URL;
     public static Integer FILE_INDEX = -1;
+    public static List<CompletableFuture<Void>> FUTURES;
 }
