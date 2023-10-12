@@ -10,5 +10,5 @@ import com.sruteesh.imgSync.logger.Logger;
 
 
 public interface GoogleDriveAPIClient {
-    public void initiateSync(String folderId, String authToken, String parentPath, Logger logger,AmazonS3 s3Client) throws MalformedURLException, ProtocolException, IOException, InterruptedException, ExecutionException;
+    public void initiateSync(String folderId, String authToken, String parentPath, Logger logger,AmazonS3 s3Client,boolean flag) throws MalformedURLException, ProtocolException, IOException, InterruptedException, ExecutionException;
 }

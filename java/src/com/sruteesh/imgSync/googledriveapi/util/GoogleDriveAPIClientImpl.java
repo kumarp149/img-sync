@@ -34,7 +34,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
      */
 
     @Override
-    public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client) throws IOException, InterruptedException, ExecutionException{
+    public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client, boolean flag) throws IOException, InterruptedException, ExecutionException{
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
         if (Constants.FUTURES.size() >= Integer.valueOf(System.getenv("MAX_THREADS"))){
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
@@ -86,7 +86,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                     logger.log(LogType.DEBUG, entity.getId() + " IS A FOLDER", MODULE);
                     CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                         try {
-                            initiateSync(entity.getId(), authToken, parentPath + "/" + entity.getName(), logger,s3Client);
+                            initiateSync(entity.getId(), authToken, parentPath + "/" + entity.getName(), logger,s3Client,false);
                         } catch (IOException | InterruptedException | ExecutionException e) {
                             logger.log(LogType.ERROR, "ERROR WHILE SYNCING THE FOLDER: [" + entity.getId() + "]", MODULE);
                             logger.logTrace(e, MODULE);
@@ -108,7 +108,10 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                 }
             }
         }
-        CompletableFuture<Void> allFuturesFinal = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
-        allFuturesFinal.get();
+        if (flag){
+            CompletableFuture<Void> allFuturesFinal = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+            allFuturesFinal.get();
+            logger.finish();
+        }
     }
 }

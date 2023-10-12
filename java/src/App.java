@@ -79,11 +79,9 @@ public class App implements RequestStreamHandler {
         } else {
             GoogleDriveAPIClient driveClient = new GoogleDriveAPIClientImpl();
             try {
-                driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger,s3Client);
+                driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger,s3Client,true);
             } catch (InterruptedException | ExecutionException e) {
                 logger.logTrace(e, MODULE);
-            } finally{
-                logger.finish();
             }
         }
     }
