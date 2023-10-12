@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -55,6 +56,7 @@ public class App implements RequestStreamHandler {
     @Override
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context)
             throws MalformedURLException, IOException {
+        Constants.TIMESTAMP = Instant.now().getEpochSecond();
         Constants.FOLDER_TO_SYNC = System.getenv("FOLDER_TO_SYNC");
         Constants.S3_UPLOAD_PREFIX = System.getenv("S3_UPLOAD_PREFIX");
         Constants.OAUTH_TOKEN_URL = System.getenv("OAUTH_TOKEN_URL");

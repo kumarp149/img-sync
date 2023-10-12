@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,10 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     
     public void uploadToS3(GDriveEntity entity, String token, String filePath, Logger logger, AmazonS3 s3Client) throws IOException{
         final String MODULE = "S3WriteFromLink.uploadToS3";
+        if (Instant.now().getEpochSecond() - Constants.TIMESTAMP > 840){
+            logger.log(LogType.DEBUG, "ABOUT TO REACH THE EXECUTION TIME LIMIT", MODULE);
+            return;
+        }
         logger.log(LogType.DEBUG, "UPLOADING FILE: [" + Constants.FILE_INDEX + "]", MODULE);
         String objectHash = getObjectHash(filePath, entity.getName(), logger,s3Client);
         logger.log(LogType.DEBUG, "S3 OBJECT HASH: [" + objectHash + "] AND HASH IN GDRIVE: [" + entity.getSha256Checksum() + "]", MODULE);

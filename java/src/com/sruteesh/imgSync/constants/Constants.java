@@ -9,6 +9,7 @@ public class Constants {
     public static final String DRIVE_SCOPE_URL = "https://www.googleapis.com/auth/drive.readonly";
     public static final String S3_BUCKET_NAME = "sruteesh-gdrive-sync";
     public static final String S3_LOGGER_BUCKET = "sruteesh-gdrive-sync-logs";
+    public static long TIMESTAMP;
     public static String S3_UPLOAD_PREFIX;
     public static String FOLDER_TO_SYNC;
     public static String OAUTH_TOKEN_URL;
