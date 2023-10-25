@@ -7,6 +7,7 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
@@ -36,7 +37,7 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
         logger.log(LogType.DEBUG, "S3 OBJECT HASH: [" + objectHash + "] AND HASH IN GDRIVE: [" + entity.getSha256Checksum() + "]", MODULE);
         if ((objectHash == null) || (!objectHash.equals(entity.getSha256Checksum()))){
             int maxRetries = 3;
-            int retryCount = 0;
+            long retryCount = 0;
             while(retryCount < maxRetries){
                 try{
                     URL fileDownloadURL = new URL(Constants.DRIVE_API_URL + "/" + entity.getId() + "?" + "alt=media");
@@ -55,6 +56,12 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
                 } catch(Exception e){
                     retryCount += 1;
                     logger.log(LogType.ERROR, "UPLOADING " + filePath + " FAILED DURING THE ATTEMPT: " + retryCount, MODULE);
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(150+50*retryCount);
+                    } catch (InterruptedException e1) {
+                        logger.logTrace(e1, MODULE);
+                        return;
+                    }
                 }
             } 
         } else{
