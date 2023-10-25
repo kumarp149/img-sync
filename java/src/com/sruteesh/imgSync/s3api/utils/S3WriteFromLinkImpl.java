@@ -61,7 +61,7 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
         metadata.setContentLength(entity.getSize());
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(Constants.S3_BUCKET_NAME, filePath + "/" + entity.getName(), stream, metadata);
-        putObjectRequest.getRequestClientOptions().setReadLimit(2 * 1024 * 1024);
+        putObjectRequest.getRequestClientOptions().setReadLimit(getNumericFactorForStream(entity.getSize()) * 1024 * 1024);
         s3Client.putObject(putObjectRequest);
 
         logger.log(LogType.DEBUG, "OBJECT " + filePath + "/" + entity.getName() + " SUCCESSFULLY UPLOADED TO S3", MODULE);
@@ -99,5 +99,9 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
             logger.logTrace(e, MODULE);
         }
         return null;
+    }
+    private static int getNumericFactorForStream(long size){
+        int megaBytes = (int) size/(1024*1024);
+        return (megaBytes%3 == 0) ? megaBytes/3  : (megaBytes/3)+1;
     }
 }
