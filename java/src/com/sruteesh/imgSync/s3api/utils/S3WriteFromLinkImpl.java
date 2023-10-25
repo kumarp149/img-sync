@@ -36,19 +36,37 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
         String objectHash = getObjectHash(filePath, entity.getName(), logger,s3Client);
         logger.log(LogType.DEBUG, "S3 OBJECT HASH: [" + objectHash + "] AND HASH IN GDRIVE: [" + entity.getSha256Checksum() + "]", MODULE);
         if ((objectHash == null) || (!objectHash.equals(entity.getSha256Checksum()))){
-            int maxRetries = 3;
+            int maxRetries = 5;
             long retryCount = 0;
+            URL fileDownloadURL = new URL(Constants.DRIVE_API_URL + "/" + entity.getId() + "?" + "alt=media");
+            HttpURLConnection connection = (HttpURLConnection) fileDownloadURL.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Authorization","Bearer " + token);
             while(retryCount < maxRetries){
                 try{
-                    URL fileDownloadURL = new URL(Constants.DRIVE_API_URL + "/" + entity.getId() + "?" + "alt=media");
-                    logger.log(LogType.DEBUG, "FETCH STREAM FROM URL: [" + fileDownloadURL.toString() + "]", MODULE);
-                    HttpURLConnection connection = (HttpURLConnection) fileDownloadURL.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setRequestProperty("Authorization","Bearer " + token);
+                    connection.connect();
                     int responseCode = connection.getResponseCode();
                     if (responseCode == HttpURLConnection.HTTP_OK){
                         InputStream fileStream = connection.getInputStream();
-                        streamToS3(fileStream, entity, filePath, logger, s3Client);
+
+                        ObjectMetadata metadata = new ObjectMetadata();
+                        metadata.setContentLength(entity.getSize());
+
+                        PutObjectRequest putObjectRequest = new PutObjectRequest(Constants.S3_BUCKET_NAME, filePath + "/" + entity.getName(), fileStream, metadata);
+                        putObjectRequest.getRequestClientOptions().setReadLimit(getNumericFactorForStream(entity.getSize()) * 1024 * 1024);
+                        s3Client.putObject(putObjectRequest);
+
+                        logger.log(LogType.DEBUG, "OBJECT " + filePath + "/" + entity.getName() + " SUCCESSFULLY UPLOADED TO S3", MODULE);
+                        
+                        Tag objectHashTag = new Tag("hash", entity.getSha256Checksum());
+                        List<Tag> objectTags = new ArrayList<>();
+                        objectTags.add(objectHashTag);
+
+                        ObjectTagging objectTagging = new ObjectTagging(objectTags);
+                        SetObjectTaggingRequest setObjectTaggingRequest = new SetObjectTaggingRequest(Constants.S3_BUCKET_NAME,filePath + "/" + entity.getName(),objectTagging);
+                        s3Client.setObjectTagging(setObjectTaggingRequest);
+                        logger.log(LogType.DEBUG, "TAG " + objectHashTag.toString() + " SUCCESSFULLY SET FOR THE OBJECT " + filePath + "/" + entity.getName(), MODULE);
+
                         fileStream.close();
                         Constants.FILE_INDEX += 1;
                     }
@@ -57,7 +75,7 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
                     retryCount += 1;
                     logger.log(LogType.ERROR, "UPLOADING " + filePath + " FAILED DURING THE ATTEMPT: " + retryCount, MODULE);
                     try {
-                        TimeUnit.MILLISECONDS.sleep(150+50*retryCount);
+                        TimeUnit.MILLISECONDS.sleep(150+20*retryCount*(long)Math.pow(2, retryCount));
                     } catch (InterruptedException e1) {
                         logger.logTrace(e1, MODULE);
                         return;
@@ -69,27 +87,7 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
             Constants.FILE_INDEX += 1;
         }
     }
-    
-    private void streamToS3(InputStream stream,GDriveEntity entity, String filePath, Logger logger, AmazonS3 s3Client) throws IOException{
-        final String MODULE = "S3WriteFromLinkImpl.streamToS3";
 
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(entity.getSize());
-
-        PutObjectRequest putObjectRequest = new PutObjectRequest(Constants.S3_BUCKET_NAME, filePath + "/" + entity.getName(), stream, metadata);
-        putObjectRequest.getRequestClientOptions().setReadLimit(getNumericFactorForStream(entity.getSize()) * 1024 * 1024);
-        s3Client.putObject(putObjectRequest);
-
-        logger.log(LogType.DEBUG, "OBJECT " + filePath + "/" + entity.getName() + " SUCCESSFULLY UPLOADED TO S3", MODULE);
-
-        Tag objectHashTag = new Tag("hash", entity.getSha256Checksum());
-        List<Tag> objectTags = new ArrayList<>();
-        objectTags.add(objectHashTag);
-        ObjectTagging objectTagging = new ObjectTagging(objectTags);
-        SetObjectTaggingRequest setObjectTaggingRequest = new SetObjectTaggingRequest(Constants.S3_BUCKET_NAME,filePath + "/" + entity.getName(),objectTagging);
-        s3Client.setObjectTagging(setObjectTaggingRequest);
-        logger.log(LogType.DEBUG, "TAG " + objectHashTag.toString() + " SUCCESSFULLY SET FOR THE OBJECT " + filePath + "/" + entity.getName(), MODULE);
-    }
 
     private String getObjectHash(String objectPrefix, String objectName, Logger logger,AmazonS3 s3Client){
         final String MODULE = "S3WriteFromLink.getObjectHash";
