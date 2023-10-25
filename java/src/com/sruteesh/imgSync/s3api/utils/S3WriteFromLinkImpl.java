@@ -35,19 +35,28 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
         String objectHash = getObjectHash(filePath, entity.getName(), logger,s3Client);
         logger.log(LogType.DEBUG, "S3 OBJECT HASH: [" + objectHash + "] AND HASH IN GDRIVE: [" + entity.getSha256Checksum() + "]", MODULE);
         if ((objectHash == null) || (!objectHash.equals(entity.getSha256Checksum()))){
-            URL fileDownloadURL = new URL(Constants.DRIVE_API_URL + "/" + entity.getId() + "?" + "alt=media");
-            logger.log(LogType.DEBUG, "FETCH STREAM FROM URL: [" + fileDownloadURL.toString() + "]", MODULE);
-            HttpURLConnection connection = (HttpURLConnection) fileDownloadURL.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("Authorization","Bearer " + token);
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK){
-                InputStream fileStream = connection.getInputStream();
-                streamToS3(fileStream, entity, filePath, logger, s3Client);
-                fileStream.close();
-                Constants.FILE_INDEX += 1;
-            }
-            connection.disconnect();
+            int maxRetries = 3;
+            int retryCount = 0;
+            while(retryCount < maxRetries){
+                try{
+                    URL fileDownloadURL = new URL(Constants.DRIVE_API_URL + "/" + entity.getId() + "?" + "alt=media");
+                    logger.log(LogType.DEBUG, "FETCH STREAM FROM URL: [" + fileDownloadURL.toString() + "]", MODULE);
+                    HttpURLConnection connection = (HttpURLConnection) fileDownloadURL.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("Authorization","Bearer " + token);
+                    int responseCode = connection.getResponseCode();
+                    if (responseCode == HttpURLConnection.HTTP_OK){
+                        InputStream fileStream = connection.getInputStream();
+                        streamToS3(fileStream, entity, filePath, logger, s3Client);
+                        fileStream.close();
+                        Constants.FILE_INDEX += 1;
+                    }
+                    connection.disconnect();
+                } catch(Exception e){
+                    retryCount += 1;
+                    logger.log(LogType.ERROR, "UPLOADING " + filePath + " FAILED DURING THE ATTEMPT: " + retryCount, MODULE);
+                }
+            } 
         } else{
             logger.log(LogType.DEBUG, "S3 OBJECT HASH MATCHED WITH THAT OF DRIVE HASH", MODULE);
             Constants.FILE_INDEX += 1;
@@ -102,6 +111,6 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     }
     private static int getNumericFactorForStream(long size){
         int megaBytes = (int) size/(1024*1024);
-        return (megaBytes%3 == 0) ? megaBytes/3  : (megaBytes/3)+1;
+        return (megaBytes%4 == 0) ? megaBytes/4  : (megaBytes/4)+1;
     }
 }
