@@ -70,7 +70,7 @@ public class App implements RequestStreamHandler {
 
         final String MODULE = "App.handleRequest";
         Logger logger = new LoggerImpl();
-        logger.log(LogType.INFO, "STARTED SYNCING THE FOLDER " + System.getenv("FOLDER_TO_SYNC") + " FROM GDRIVE TO S3", MODULE);
+        logger.log(LogType.INFO, "STARTED SYNCING THE FOLDER " + Constants.FOLDER_TO_SYNC + " FROM GDRIVE TO S3", MODULE);
         String authToken = generateOAuthToken(logger);
         if (authToken == null) {
             logger.log(LogType.ERROR,"ERROR GENERATING TOKEN",MODULE);

@@ -38,9 +38,12 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
         if (Constants.FUTURES.size() >= Integer.valueOf(System.getenv("MAX_THREADS"))){
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+            logger.log(LogType.DEBUG, "WAITING FOR ALL EXISTING FUTURES TO BE OVER", MODULE);
             allFutures.get();
             Constants.FUTURES.clear();
         }
+        logger.log(LogType.DEBUG, "PUSHING NEW FUTURES TO QUEUE", MODULE);
+
         logger.log(LogType.DEBUG, "CALLING GDRIVE API CALL FOR FOLDER: [" + folderId + "]", MODULE);
         URL contentFetchEndpoint = new URL(Constants.DRIVE_API_URL + "?" + "q='" + folderId + "'+in+parents&fields=files(id,name,parents,sha256Checksum,mimeType,webContentLink,size)&pageSize=1000");
         logger.log(LogType.DEBUG, "GDRIVE API ENDPOINT URL TO FETCH FILE LIST: [" + contentFetchEndpoint.toString() + "]", MODULE);
@@ -110,6 +113,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
         }
         if (flag){
             CompletableFuture<Void> allFuturesFinal = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+            logger.log(LogType.DEBUG, "WAITING FOR ALL FUTURES TO BE OVER", MODULE);
             allFuturesFinal.get();
             logger.finish();
         }
