@@ -1,6 +1,7 @@
 package com.sruteesh.imgSync.constants;
 
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
 public class Constants {
@@ -14,4 +15,5 @@ public class Constants {
     public static String OAUTH_TOKEN_URL;
     public static Integer FILE_INDEX = -1;
     public static List<CompletableFuture<Void>> FUTURES;
+    public static Queue<CompletableFuture<Void>> SYNCFUTURES;
 }

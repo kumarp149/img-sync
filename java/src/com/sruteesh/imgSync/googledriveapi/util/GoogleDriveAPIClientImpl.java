@@ -36,12 +36,6 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
     @Override
     public void initiateSync(String folderId,String authToken, String parentPath, Logger logger,AmazonS3 s3Client, boolean flag) throws IOException, InterruptedException, ExecutionException{
         final String MODULE = "GoogleDriveAPIClient.initiateSync";
-        if (Constants.FUTURES.size() >= Integer.valueOf(System.getenv("MAX_THREADS"))){
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
-            logger.log(LogType.DEBUG, "WAITING FOR ALL EXISTING FUTURES TO BE OVER", MODULE);
-            allFutures.get();
-            Constants.FUTURES.clear();
-        }
         logger.log(LogType.DEBUG, "PUSHING NEW FUTURES TO QUEUE", MODULE);
 
         logger.log(LogType.DEBUG, "CALLING GDRIVE API CALL FOR FOLDER: [" + folderId + "]", MODULE);
@@ -96,7 +90,7 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                         }
                         return null;
                     });
-                    Constants.FUTURES.add(future);
+                    Constants.SYNCFUTURES.add(future);
                 } else{
                     CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
                         try {
@@ -107,15 +101,30 @@ public class GoogleDriveAPIClientImpl implements GoogleDriveAPIClient {
                         }
                         return null;
                     });
+                    if (Constants.FUTURES.size() >= Integer.valueOf(System.getenv("MAX_THREADS"))){
+                        CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+                        logger.log(LogType.DEBUG, "WAITING FOR ALL EXISTING FUTURES TO BE OVER", MODULE);
+                        allFutures.get();
+                        Constants.FUTURES.clear();
+                    }
                     Constants.FUTURES.add(future);
+                }
+                if (flag){
+                    waitForCompletion(logger);
                 }
             }
         }
-        if (flag){
-            CompletableFuture<Void> allFuturesFinal = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
-            logger.log(LogType.DEBUG, "WAITING FOR ALL FUTURES TO BE OVER", MODULE);
-            allFuturesFinal.get();
-            logger.finish();
+    }
+
+    private void waitForCompletion(Logger logger){
+        final String MODULE = "GoogleDriveAPIClient.waitForCompletion";
+        while(!Constants.SYNCFUTURES.isEmpty()){
+            try {
+                Constants.SYNCFUTURES.peek().get();
+                Constants.SYNCFUTURES.remove();
+            } catch (InterruptedException | ExecutionException e) {
+                logger.logTrace(e, MODULE);
+            }
         }
     }
 }

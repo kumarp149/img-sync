@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -60,6 +61,7 @@ public class App implements RequestStreamHandler {
         Constants.OAUTH_TOKEN_URL = System.getenv("OAUTH_TOKEN_URL");
 
         Constants.FUTURES = new ArrayList<>();
+        Constants.SYNCFUTURES = new LinkedList<>();
 
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.setMaxConnections(5000);
@@ -80,6 +82,7 @@ public class App implements RequestStreamHandler {
             GoogleDriveAPIClient driveClient = new GoogleDriveAPIClientImpl();
             try {
                 driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger,s3Client,true);
+                logger.finish();
             } catch (InterruptedException | ExecutionException e) {
                 logger.logTrace(e, MODULE);
             }
