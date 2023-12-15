@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -82,6 +83,10 @@ public class App implements RequestStreamHandler {
             GoogleDriveAPIClient driveClient = new GoogleDriveAPIClientImpl();
             try {
                 driveClient.initiateSync(Constants.FOLDER_TO_SYNC, authToken, Constants.S3_UPLOAD_PREFIX, logger,s3Client,true);
+                CompletableFuture<Void> allFutures = CompletableFuture.allOf(Constants.FUTURES.toArray(new CompletableFuture[0]));
+                logger.log(LogType.DEBUG, "WAITING FOR ALL FUTURES TO BE OVER", MODULE);
+                allFutures.get();
+                Constants.FUTURES.clear();
                 logger.finish();
             } catch (InterruptedException | ExecutionException e) {
                 logger.logTrace(e, MODULE);
