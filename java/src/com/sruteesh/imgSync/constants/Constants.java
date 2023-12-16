@@ -16,4 +16,5 @@ public class Constants {
     public static Integer FILE_INDEX = -1;
     public static List<CompletableFuture<Void>> FUTURES;
     public static Queue<CompletableFuture<Void>> SYNCFUTURES;
+    public static long INIT_TIME;
 }
