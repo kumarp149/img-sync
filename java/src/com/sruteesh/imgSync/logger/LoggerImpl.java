@@ -61,7 +61,9 @@ public class LoggerImpl implements Logger {
                 type = "DEBUG";
         }
         logContent += " - [" + type + "] - (" + moduleName + "): " + message + System.lineSeparator();
-        System.out.println(System.currentTimeMillis() + " - " + this.loggerID + " - [" + type + "] - (" + moduleName + "): " + message + System.lineSeparator());
+        if (Integer.valueOf(System.getenv("BYPASS_LOGS")) == 0){
+            System.out.println(System.currentTimeMillis() + " - " + this.loggerID + " - [" + type + "] - (" + moduleName + "): " + message + System.lineSeparator());
+        }
     }
 
     @Override

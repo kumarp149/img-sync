@@ -27,7 +27,7 @@ public class S3WriteFromLinkImpl implements S3WriteFromLink {
     
     public void uploadToS3(GDriveEntity entity, String token, String filePath, Logger logger, AmazonS3 s3Client) throws IOException{
         final String MODULE = "S3WriteFromLink.uploadToS3";
-        if (Instant.now().getEpochSecond() - Constants.INIT_TIME >= 780){
+        if (Instant.now().getEpochSecond() - Constants.INIT_TIME >= 840){
             logger.log(LogType.DEBUG, "SKIPPING UPLOADS AS THE EXECUTION IS TIMING OUT", MODULE);
             return;
         }
