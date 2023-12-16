@@ -30,6 +30,10 @@ import com.sruteesh.imgSync.googledriveapi.util.GoogleDriveAPIClientImpl;
 import com.sruteesh.imgSync.logger.LogType;
 import com.sruteesh.imgSync.logger.Logger;
 import com.sruteesh.imgSync.logger.LoggerImpl;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
 
 public class App implements RequestStreamHandler {
 
@@ -39,11 +43,18 @@ public class App implements RequestStreamHandler {
         String OAuthLambdaFunction = System.getenv("OAUTH_FUNCTION");
         AWSLambda lambdaClient = AWSLambdaClientBuilder.defaultClient();
         InvokeRequest tokenRequest = new InvokeRequest().withFunctionName(OAuthLambdaFunction);
-        InvokeResult token = lambdaClient.invoke(tokenRequest);
-        String result = new String(token.getPayload().array(), StandardCharsets.UTF_8);
-        logger.log(LogType.DEBUG, "JWT Token is " + result, MODULE);
-        lambdaClient.shutdown();
-        return result;
+        InvokeResult tokenResult = lambdaClient.invoke(tokenRequest);
+        String response = new String(tokenResult.getPayload().array(), StandardCharsets.UTF_8);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(response);
+        Integer responseCode = jsonNode.get("statusCode").asInt();
+        logger.log(LogType.DEBUG, "RESPONSE CODE FROM OAUTH LAMBDA FUNCTION: [" + responseCode + "]", MODULE);
+        if (responseCode == 200){
+            logger.log(LogType.DEBUG, "SUCCESSFULLY FETCHED OAUTH TOKEN", MODULE);
+            return jsonNode.get("body").asText();
+        }
+        logger.log(LogType.ERROR, "ERROR FETCHING OAUTH TOKEN", MODULE);
+        return null;
     }
 
     @Override
