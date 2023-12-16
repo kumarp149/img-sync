@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -17,6 +18,10 @@ import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.retry.RetryPolicy;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.InvokeRequest;
+import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.sruteesh.imgSync.constants.Constants;
@@ -30,29 +35,14 @@ public class App implements RequestStreamHandler {
 
     private static String generateOAuthToken(Logger logger) throws IOException, MalformedURLException {
         final String MODULE = "App.generateOAuthToken";
-        URL OAuthGenUrl = new URL(Constants.OAUTH_TOKEN_URL);
-        HttpURLConnection connection = (HttpURLConnection) OAuthGenUrl.openConnection();
-        connection.setRequestMethod("GET");
-
-        int responseCode = connection.getResponseCode();
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            connection.disconnect();
-            return response.toString();
-        } else {
-            logger.log(LogType.ERROR, "ERROR GENERATING TOKEN", MODULE);
-            logger.log(LogType.DEBUG, "RESPONSE FROM API: " + response, MODULE);
-            connection.disconnect();
-            return null;
-        }
+        logger.log(LogType.DEBUG, "Invoking lambda function to get OAuth token", MODULE);
+        String OAuthLambdaFunction = System.getenv("OAUTH_FUNCTION");
+        AWSLambda lambdaClient = AWSLambdaClientBuilder.defaultClient();
+        InvokeRequest tokenRequest = new InvokeRequest().withFunctionName(OAuthLambdaFunction);
+        InvokeResult token = lambdaClient.invoke(tokenRequest);
+        String result = new String(token.getPayload().array(), StandardCharsets.UTF_8);
+        lambdaClient.shutdown();
+        return result;
     }
 
     @Override
