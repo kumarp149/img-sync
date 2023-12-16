@@ -41,6 +41,7 @@ public class App implements RequestStreamHandler {
         InvokeRequest tokenRequest = new InvokeRequest().withFunctionName(OAuthLambdaFunction);
         InvokeResult token = lambdaClient.invoke(tokenRequest);
         String result = new String(token.getPayload().array(), StandardCharsets.UTF_8);
+        logger.log(LogType.DEBUG, "JWT Token is " + result, MODULE);
         lambdaClient.shutdown();
         return result;
     }
